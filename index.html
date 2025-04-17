@@ -1,0 +1,603 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Programming Language Roulette</title>
+    <style>
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: #1e1e2e;
+            color: white;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow-x: hidden;
+        }
+
+        .container {
+            display: flex;
+            flex-direction: column;
+            width: 95%;
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            color: gold;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+            font-size: 1.8rem;
+        }
+
+        .game-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .wheel-container {
+            position: relative;
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+
+        .wheel {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            position: relative;
+            overflow: hidden;
+            border: 8px solid #333;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0, 0, 0, 0.8);
+            transition: transform 5s cubic-bezier(0.25, 0.1, 0.25, 1);
+            transform-origin: center center;
+        }
+
+        .sector {
+            position: absolute;
+            width: 0;
+            height: 0;
+            transform-origin: center bottom;
+            border-style: solid;
+            border-width: 150px 10px 0;
+            left: 50%;
+            top: 0;
+            margin-left: -10px;
+        }
+
+        .cpu {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            background-image: url('/api/placeholder/20/20');
+            background-size: cover;
+            border-radius: 50%;
+            top: -10px;
+            left: 50%;
+            z-index: 10;
+            transform: translateX(-50%);
+            box-shadow: 0 0 5px white;
+        }
+
+        .wheel-center {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(45deg, #444, #222);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 2;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .wheel-center::after {
+            content: '';
+            width: 20px;
+            height: 20px;
+            background: #111;
+            border-radius: 50%;
+        }
+
+        .table {
+            width: 100%;
+            background-color: #265c41;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+            margin-top: 10px;
+            box-sizing: border-box;
+        }
+
+        .betting-grid {
+            display: grid;
+            grid-template-columns: repeat(12, 1fr);
+            grid-gap: 3px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .bet-cell {
+            aspect-ratio: 1/1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 1px solid white;
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+            font-size: 0.8rem;
+        }
+
+        .bet-cell:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+
+        .bet-cell.selected {
+            border: 2px solid gold;
+            transform: scale(1.05);
+            box-shadow: 0 0 10px gold;
+        }
+
+        .js-cell {
+            background-color: #f7df1e;
+            color: black;
+        }
+
+        .py-cell {
+            background-color: #306998;
+            color: white;
+        }
+
+        .ruby-cell {
+            background-color: #cc342d;
+            color: white;
+        }
+
+        .zero-cell {
+            grid-column: span 2;
+            background-color: #333;
+            color: white;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: space-around;
+            margin-top: 10px;
+            width: 100%;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .bet-amount {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        input[type="number"] {
+            padding: 5px;
+            width: 70px;
+            border-radius: 5px;
+            border: none;
+        }
+
+        button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            background-color: #4CAF50;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        button:hover {
+            background-color: #3e8e41;
+            transform: scale(1.05);
+        }
+
+        button:disabled {
+            background-color: #888;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .result {
+            margin-top: 10px;
+            padding: 5px;
+            text-align: center;
+            font-size: 1rem;
+            min-height: 20px;
+        }
+
+        .stats {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .stats div {
+            background-color: #333;
+            padding: 5px 10px;
+            border-radius: 5px;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .marker {
+            position: absolute;
+            top: -10px;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-left: 10px solid transparent;
+            border-right: 10px solid transparent;
+            border-top: 20px solid white;
+            transform: translateX(-50%);
+            z-index: 5;
+        }
+
+        @keyframes cpuBounce {
+            0%, 100% { transform: translateY(0) translateX(-50%); }
+            50% { transform: translateY(-2px) translateX(-50%); }
+        }
+
+        .spinning .cpu {
+            animation: cpuBounce 0.2s infinite;
+        }
+
+        .languages {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-top: 10px;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+
+        .language {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 0.8rem;
+        }
+
+        .color-box {
+            width: 15px;
+            height: 15px;
+            border-radius: 3px;
+        }
+
+        .js-color {
+            background-color: #f7df1e;
+        }
+
+        .py-color {
+            background-color: #306998;
+        }
+
+        .ruby-color {
+            background-color: #cc342d;
+        }
+
+        @media (max-width: 768px) {
+            .wheel-container {
+                width: 250px;
+                height: 250px;
+            }
+            .sector {
+                border-width: 125px 8px 0;
+                margin-left: -8px;
+            }
+            .wheel-center {
+                width: 50px;
+                height: 50px;
+            }
+            .betting-grid {
+                grid-gap: 2px;
+            }
+            .bet-cell {
+                font-size: 0.7rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Programming Language Roulette</h1>
+        
+        <div class="languages">
+            <div class="language">
+                <div class="color-box js-color"></div>
+                <span>JavaScript</span>
+            </div>
+            <div class="language">
+                <div class="color-box py-color"></div>
+                <span>Python</span>
+            </div>
+            <div class="language">
+                <div class="color-box ruby-color"></div>
+                <span>Ruby</span>
+            </div>
+        </div>
+        
+        <div class="game-area">
+            <div class="wheel-container">
+                <div class="wheel" id="wheel">
+                    <!-- Sectors will be created by JavaScript -->
+                </div>
+                <div class="wheel-center"></div>
+                <div class="marker"></div>
+                <div class="cpu" id="cpu"></div>
+            </div>
+            
+            <div class="controls">
+                <div class="bet-amount">
+                    <label for="amount">Bet:</label>
+                    <input type="number" id="amount" min="1" max="1000" value="10">
+                </div>
+                <button id="spin-btn">SPIN</button>
+                <button id="clear-btn">CLEAR BETS</button>
+            </div>
+            
+            <div class="result" id="result"></div>
+            
+            <div class="stats">
+                <div>Balance: $<span id="balance">1000</span></div>
+                <div>Current Bet: $<span id="current-bet">0</span></div>
+                <div>Last Win: $<span id="last-win">0</span></div>
+            </div>
+            
+            <div class="table">
+                <div class="betting-grid" id="betting-grid">
+                    <!-- Will be filled with JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Constants and variables
+        const NUM_SECTORS = 38; // American Roulette has 38 sectors (0, 00, 1-36)
+        const RUBY_NUMBERS = [0, '00']; // Ruby (originally green)
+        const JS_NUMBERS = [2, 4, 6, 8, 10, 11, 13, 15, 17, 20, 22, 24, 26, 28, 29, 31, 33, 35]; // JavaScript (originally black)
+        const PY_NUMBERS = [1, 3, 5, 7, 9, 12, 14, 16, 18, 19, 21, 23, 25, 27, 30, 32, 34, 36]; // Python (originally red)
+        
+        let selectedCells = new Set();
+        let balance = 1000;
+        let spinning = false;
+        let currentBet = 0;
+        let lastWin = 0;
+        
+        // DOM elements
+        const wheel = document.getElementById('wheel');
+        const cpu = document.getElementById('cpu');
+        const spinBtn = document.getElementById('spin-btn');
+        const clearBtn = document.getElementById('clear-btn');
+        const betAmount = document.getElementById('amount');
+        const resultDisplay = document.getElementById('result');
+        const balanceDisplay = document.getElementById('balance');
+        const currentBetDisplay = document.getElementById('current-bet');
+        const lastWinDisplay = document.getElementById('last-win');
+        const bettingGrid = document.getElementById('betting-grid');
+        
+        // Create wheel sectors
+        function createWheel() {
+            const sectorAngle = 360 / NUM_SECTORS;
+            const numbers = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, '00', 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2];
+            
+            for (let i = 0; i < NUM_SECTORS; i++) {
+                const sector = document.createElement('div');
+                sector.className = 'sector';
+                
+                // Set color based on number
+                let number = numbers[i];
+                let color;
+                
+                if (RUBY_NUMBERS.includes(number)) {
+                    color = '#cc342d'; // Ruby (red)
+                } else if (JS_NUMBERS.includes(number)) {
+                    color = '#f7df1e'; // JavaScript (yellow)
+                } else {
+                    color = '#306998'; // Python (blue)
+                }
+                
+                sector.style.transform = `rotate(${i * sectorAngle}deg)`;
+                sector.style.borderColor = `${color} transparent transparent`;
+                
+                // Store the number as a data attribute
+                sector.dataset.number = number;
+                
+                wheel.appendChild(sector);
+            }
+        }
+        
+        // Create betting table
+        function createBettingTable() {
+            // Add 0 and 00 cells
+            const zero = document.createElement('div');
+            zero.className = 'bet-cell ruby-cell';
+            zero.textContent = '0';
+            zero.dataset.number = '0';
+            bettingGrid.appendChild(zero);
+            
+            const doubleZero = document.createElement('div');
+            doubleZero.className = 'bet-cell ruby-cell';
+            doubleZero.textContent = '00';
+            doubleZero.dataset.number = '00';
+            bettingGrid.appendChild(doubleZero);
+            
+            // Add numbers 1-36
+            for (let i = 1; i <= 36; i++) {
+                const cell = document.createElement('div');
+                
+                if (JS_NUMBERS.includes(i)) {
+                    cell.className = 'bet-cell js-cell';
+                } else if (PY_NUMBERS.includes(i)) {
+                    cell.className = 'bet-cell py-cell';
+                }
+                
+                cell.textContent = i.toString();
+                cell.dataset.number = i.toString();
+                bettingGrid.appendChild(cell);
+            }
+        }
+        
+        // Add event listeners to betting cells
+        function setupBettingEvents() {
+            const cells = document.querySelectorAll('.bet-cell');
+            cells.forEach(cell => {
+                cell.addEventListener('click', () => {
+                    if (spinning) return;
+                    
+                    const amount = parseInt(betAmount.value) || 0;
+                    if (amount <= 0) {
+                        alert('Please enter a valid bet amount');
+                        return;
+                    }
+                    
+                    if (cell.classList.contains('selected')) {
+                        cell.classList.remove('selected');
+                        selectedCells.delete(cell.dataset.number);
+                        currentBet -= amount;
+                    } else {
+                        if (balance - amount < 0) {
+                            alert('Not enough balance!');
+                            return;
+                        }
+                        cell.classList.add('selected');
+                        selectedCells.add(cell.dataset.number);
+                        currentBet += amount;
+                    }
+                    
+                    updateStats();
+                });
+            });
+        }
+        
+        // Spin the wheel
+        function spinWheel() {
+            if (spinning || selectedCells.size === 0) return;
+            
+            spinning = true;
+            spinBtn.disabled = true;
+            clearBtn.disabled = true;
+            
+            // Subtract bet from balance
+            balance -= currentBet;
+            updateStats();
+            
+            // Random spins between 2 and 5 full rotations plus random sector
+            const spins = 2 + Math.random() * 3;
+            const randomSector = Math.floor(Math.random() * NUM_SECTORS);
+            const rotation = 360 * spins + (randomSector * (360 / NUM_SECTORS));
+            
+            // Start animation
+            wheel.classList.add('spinning');
+            cpu.style.animation = 'cpuBounce 0.2s infinite';
+            wheel.style.transform = `rotate(${rotation}deg)`;
+            
+            // Determine the winning number
+            const numbers = [0, 28, 9, 26, 30, 11, 7, 20, 32, 17, 5, 22, 34, 15, 3, 24, 36, 13, 1, '00', 27, 10, 25, 29, 12, 8, 19, 31, 18, 6, 21, 33, 16, 4, 23, 35, 14, 2];
+            const winningNumber = numbers[(NUM_SECTORS - randomSector) % NUM_SECTORS];
+            
+            // Check if user has won after the animation
+            setTimeout(() => {
+                wheel.classList.remove('spinning');
+                cpu.style.animation = '';
+                
+                let winAmount = 0;
+                if (selectedCells.has(winningNumber.toString())) {
+                    winAmount = parseInt(betAmount.value) * 35;
+                    balance += winAmount + parseInt(betAmount.value);
+                    lastWin = winAmount;
+                    
+                    resultDisplay.textContent = `🎉 Winner! Number ${winningNumber} - You win $${winAmount}`;
+                    resultDisplay.style.color = '#4CAF50';
+                } else {
+                    lastWin = 0;
+                    resultDisplay.textContent = `😞 You lost! Winning number: ${winningNumber}`;
+                    resultDisplay.style.color = '#e74c3c';
+                }
+                
+                // Highlight the winning cell
+                const cells = document.querySelectorAll('.bet-cell');
+                cells.forEach(cell => {
+                    if (cell.dataset.number === winningNumber.toString()) {
+                        cell.style.boxShadow = '0 0 20px gold';
+                        setTimeout(() => {
+                            cell.style.boxShadow = '';
+                        }, 2000);
+                    }
+                });
+                
+                // Reset for next round
+                spinning = false;
+                spinBtn.disabled = false;
+                clearBtn.disabled = false;
+                currentBet = 0;
+                selectedCells.clear();
+                
+                // Clear selections
+                const selectedElements = document.querySelectorAll('.bet-cell.selected');
+                selectedElements.forEach(el => el.classList.remove('selected'));
+                
+                updateStats();
+            }, 5000); // Match the CSS transition time
+        }
+        
+        // Clear all bets
+        function clearBets() {
+            if (spinning) return;
+            
+            const selectedElements = document.querySelectorAll('.bet-cell.selected');
+            selectedElements.forEach(el => el.classList.remove('selected'));
+            
+            selectedCells.clear();
+            currentBet = 0;
+            updateStats();
+        }
+        
+        // Update statistics display
+        function updateStats() {
+            balanceDisplay.textContent = balance;
+            currentBetDisplay.textContent = currentBet;
+            lastWinDisplay.textContent = lastWin;
+        }
+        
+        // Initialize game
+        function init() {
+            createWheel();
+            createBettingTable();
+            setupBettingEvents();
+            updateStats();
+            
+            spinBtn.addEventListener('click', spinWheel);
+            clearBtn.addEventListener('click', clearBets);
+        }
+        
+        // Start the game
+        init();
+    </script>
+</body>
+</html>
